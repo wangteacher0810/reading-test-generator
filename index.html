@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>高中國文閱讀測驗生成器 · 教育免費版</title>
+    <!-- 引入 docx 庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.2.3/build/index.min.js"></script>
+    <!-- 引入 FileSaver -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+            background: #f5f3f0;
+            color: #2c3e50;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: #4a5b6e;
+            color: #fff;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        header h1 {
+            font-weight: 400;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        header h1 small {
+            font-size: 1rem;
+            opacity: 0.7;
+            font-weight: 300;
+            margin-left: 1rem;
+        }
+        .app {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .panel-left {
+            width: 33.33%;
+            min-width: 320px;
+            background: #ffffff;
+            padding: 1.5rem 1.2rem;
+            overflow-y: auto;
+            border-right: 1px solid #dcdcdc;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.03);
+            flex-shrink: 0;
+        }
+        .panel-left h2 {
+            font-size: 1.2rem;
+            border-bottom: 2px solid #d4c5a0;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.2rem;
+            color: #3e4a5a;
+            font-weight: 500;
+        }
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #4a5b6e;
+            margin-bottom: 0.3rem;
+        }
+        .form-group textarea,
+        .form-group input {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid #d0cbc6;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: #faf9f7;
+            transition: 0.2s;
+        }
+        .form-group textarea:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #8b7a62;
+            box-shadow: 0 0 0 3px rgba(139, 122, 98, 0.15);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .row .col {
+            flex: 1;
+            min-width: 60px;
+        }
+        .row .col label {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #5a6a7a;
+        }
+        .row .col input {
+            width: 100%;
+            padding: 0.4rem 0.3rem;
+            border: 1px solid #d0cbc6;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .type-header {
+            font-weight: 600;
+            color: #4a5b6e;
+            margin: 0.8rem 0 0.3rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .type-header span {
+            background: #e8e3dc;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: #5a4f45;
+        }
+        .btn {
+            border: none;
+            color: #fff;
+            padding: 0.7rem 1.4rem;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            width: 100%;
+            margin-top: 0.3rem;
+        }
+        .btn-primary {
+            background: #4a5b6e;
+        }
+        .btn-primary:hover {
+            background: #3a4a5a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 91, 110, 0.3);
+        }
+        .btn-success {
+            background: #6a8e7a;
+        }
+        .btn-success:hover {
+            background: #557a65;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .divider {
+            height: 1px;
+            background: #e0dbd6;
+            margin: 1.2rem 0;
+        }
+        .panel-right {
+            width: 66.67%;
+            padding: 1.5rem 2rem;
+            overflow-y: auto;
+            background: #fcfbf9;
+        }
+        .panel-right .placeholder {
+            color: #b0a8a0;
+            text-align: center;
+            margin-top: 4rem;
+            font-size: 1.1rem;
+            line-height: 2;
+        }
+        .panel-right .placeholder i {
+            font-style: normal;
+            background: #ece8e3;
+            padding: 0.2rem 1rem;
+            border-radius: 20px;
+        }
+        .question-block {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 1.5rem 1.8rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border-left: 4px solid #b8a58b;
+        }
+        .question-block .q-type {
+            display: inline-block;
+            background: #e8e3dc;
+            padding: 0.2rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #5a4f45;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.8rem;
+        }
+        .question-block .q-text {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 0.8rem;
+        }
+        .question-block .options {
+            margin: 0.5rem 0 0.8rem 1.2rem;
+            list-style: none;
+        }
+        .question-block .options li {
+            margin-bottom: 0.3rem;
+            font-size: 0.98rem;
+        }
+        .question-block .answer {
+            background: #eef3ea;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            color: #3b5e3b;
+            margin: 0.5rem 0;
+        }
+        .question-block .analysis {
+            background: #f6f3ef;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            color: #4f4a44;
+            font-size: 0.95rem;
+            margin-top: 0.4rem;
+        }
+        .question-block .translation {
+            background: #efece7;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            color: #5b554d;
+            font-size: 0.95rem;
+            margin-top: 0.4rem;
+            border-left: 3px solid #b8a58b;
+        }
+        .sub-question {
+            margin-left: 1.5rem;
+            padding-left: 1rem;
+            border-left: 2px dashed #d0cbc6;
+            margin-top: 1rem;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+            color: #7d8b9f;
+        }
+        .spinner {
+            border: 4px solid #e0dbd6;
+            border-top: 4px solid #4a5b6e;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 800px) {
+            .app { flex-direction: column; }
+            .panel-left, .panel-right { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid #dcdcdc; }
+            .panel-left { max-height: 50vh; }
+            .panel-right { height: 50vh; }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #ece8e3; }
+        ::-webkit-scrollbar-thumb { background: #b8a58b; border-radius: 8px; }
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-upload-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .file-upload-btn {
+            background: #e8e3dc;
+            border: 1px dashed #b0a8a0;
+            border-radius: 6px;
+            padding: 0.6rem;
+            text-align: center;
+            color: #5a4f45;
+            font-weight: 400;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .file-upload-btn:hover { background: #ddd6ce; }
+        .inline-hint {
+            font-size: 0.8rem;
+            color: #9a8f84;
+            margin-top: 0.2rem;
+        }
+        .free-badge {
+            background: #d4c5a0;
+            color: #3e4a5a;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📖 高中國文閱讀測驗生成器 <span class="free-badge">教育免費版</span> <small>無需 API Key · 內建智慧出題</small></h1>
+    </header>
+    <div class="app">
+        <!-- 左側面板 -->
+        <div class="panel-left">
+            <h2>⚙️ 設定與文章</h2>
+
+            <div class="form-group">
+                <label>📄 上傳文章（文字檔 .txt）</label>
+                <div class="file-upload-wrapper">
+                    <div class="file-upload-btn" id="fileUploadBtn">📎 選擇檔案</div>
+                    <input type="file" id="fileInput" accept=".txt,.text" />
+                </div>
+                <div class="inline-hint">或直接於下方貼上文章內容</div>
+            </div>
+
+            <div class="form-group">
+                <label>📝 文章內容</label>
+                <textarea id="articleText" placeholder="請貼上欲出題的文章（可包含表格轉為文字、或圖片描述）"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>🔗 額外文章（用於題組搭配）<span style="font-weight:normal;color:#6a7a8a;">（選填，系統會自動補充）</span></label>
+                <textarea id="extraText" placeholder="若需題組搭配其他文本，請在此輸入；若不填，系統將自動挑選合適文本"></textarea>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 各題型三難度題數 -->
+            <div class="form-group">
+                <div class="type-header">單選題 <span>4選項</span></div>
+                <div class="row">
+                    <div class="col"><label>低 (檢索)</label><input type="number" id="singleLow" value="1" min="0" max="5" /></div>
+                    <div class="col"><label>中 (統整)</label><input type="number" id="singleMid" value="1" min="0" max="5" /></div>
+                    <div class="col"><label>高 (省思)</label><input type="number" id="singleHigh" value="0" min="0" max="5" /></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="type-header">多選題 <span>5選項</span></div>
+                <div class="row">
+                    <div class="col"><label>低</label><input type="number" id="multiLow" value="0" min="0" max="5" /></div>
+                    <div class="col"><label>中</label><input type="number" id="multiMid" value="1" min="0" max="5" /></div>
+                    <div class="col"><label>高</label><input type="number" id="multiHigh" value="0" min="0" max="5" /></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="type-header">問答題 <span>限字數</span></div>
+                <div class="row">
+                    <div class="col"><label>低</label><input type="number" id="qaLow" value="0" min="0" max="5" /></div>
+                    <div class="col"><label>中</label><input type="number" id="qaMid" value="1" min="0" max="5" /></div>
+                    <div class="col"><label>高</label><input type="number" id="qaHigh" value="0" min="0" max="5" /></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="type-header">題組題 <span>含子題</span></div>
+                <div class="row">
+                    <div class="col"><label>低</label><input type="number" id="groupLow" value="0" min="0" max="3" /></div>
+                    <div class="col"><label>中</label><input type="number" id="groupMid" value="1" min="0" max="3" /></div>
+                    <div class="col"><label>高</label><input type="number" id="groupHigh" value="0" min="0" max="3" /></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>📝 問答字數限制（每題）</label>
+                <input type="text" id="wordLimit" value="30-50字" placeholder="例如：30-50字" />
+            </div>
+
+            <button class="btn btn-primary" id="generateBtn">🚀 生成試題</button>
+            <button class="btn btn-success" id="downloadBtn" style="margin-top:0.6rem;" disabled>⬇️ 下載 Word 檔</button>
+
+            <div class="divider"></div>
+            <div style="font-size:0.8rem; color:#8a7f74; line-height:1.6;">
+                <p>💡 生成題目涵蓋三層閱讀內涵：</p>
+                <ul style="margin-left:1.2rem; list-style:circle;">
+                    <li>擷取與檢索（低）</li>
+                    <li>統整與解釋（中）</li>
+                    <li>省思與評鑑（高）</li>
+                </ul>
+                <p style="margin-top:0.5rem;">📌 內建智慧出題引擎，無需任何 API Key。</p>
+                <p style="margin-top:0.3rem;">🔔 完全離線運行，適合教育推廣使用。</p>
+            </div>
+        </div>
+
+        <!-- 右側生成區 -->
+        <div class="panel-right" id="resultPanel">
+            <div class="placeholder">
+                <p style="font-size:1.6rem; margin-bottom:0.5rem;">📚</p>
+                <p>輸入文章後點擊「生成試題」</p>
+                <p style="font-size:0.9rem; margin-top:1rem;"><i>題目將顯示於此，並可下載為 Word 檔案</i></p>
+            </div>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ========== DOM 引用 ==========
+        const fileInput = document.getElementById('fileInput');
+        const fileUploadBtn = document.getElementById('fileUploadBtn');
+        const articleText = document.getElementById('articleText');
+        const extraText = document.getElementById('extraText');
+        const wordLimit = document.getElementById('wordLimit');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultContent = document.getElementById('resultContent');
+        const resultPanel = document.getElementById('resultPanel');
+
+        const singleLow = document.getElementById('singleLow');
+        const singleMid = document.getElementById('singleMid');
+        const singleHigh = document.getElementById('singleHigh');
+        const multiLow = document.getElementById('multiLow');
+        const multiMid = document.getElementById('multiMid');
+        const multiHigh = document.getElementById('multiHigh');
+        const qaLow = document.getElementById('qaLow');
+        const qaMid = document.getElementById('qaMid');
+        const qaHigh = document.getElementById('qaHigh');
+        const groupLow = document.getElementById('groupLow');
+        const groupMid = document.getElementById('groupMid');
+        const groupHigh = document.getElementById('groupHigh');
+
+        let generatedQuestions = null;
+
+        // ========== 檔案上傳 ==========
+        fileInput.addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                articleText.value = ev.target.result;
+                fileUploadBtn.innerHTML = `📎 ${file.name}`;
+            };
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        // ========== 生成按鈕 ==========
+        generateBtn.addEventListener('click', function() {
+            const article = articleText.value.trim();
+            if (!article) {
+                alert('請先輸入或上傳文章內容！');
+                return;
+            }
+
+            const counts = {
+                single: { low: parseInt(singleLow.value)||0, mid: parseInt(singleMid.value)||0, high: parseInt(singleHigh.value)||0 },
+                multi: { low: parseInt(multiLow.value)||0, mid: parseInt(multiMid.value)||0, high: parseInt(multiHigh.value)||0 },
+                qa: { low: parseInt(qaLow.value)||0, mid: parseInt(qaMid.value)||0, high: parseInt(qaHigh.value)||0 },
+                group: { low: parseInt(groupLow.value)||0, mid: parseInt(groupMid.value)||0, high: parseInt(groupHigh.value)||0 }
+            };
+            const total = Object.values(counts).reduce((sum, obj) => sum + obj.low + obj.mid + obj.high, 0);
+            if (total === 0) {
+                alert('請至少輸入一種題型且題數 > 0');
+                return;
+            }
+
+            const extra = extraText.value.trim();
+            const wordLimitStr = wordLimit.value.trim() || '30-50字';
+
+            // 顯示載入動畫
+            resultContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>智慧出題引擎運作中，請稍候…</span>
+                </div>
+            `;
+            downloadBtn.disabled = true;
+            generatedQuestions = null;
+
+            // 使用 setTimeout 讓 UI 有時間更新
+            setTimeout(() => {
+                try {
+                    const questions = generateSmartQuestions(article, extra, counts, wordLimitStr);
+                    if (!questions || questions.length === 0) {
+                        resultContent.innerHTML = `<div style="color:#b85a5a; padding:2rem;">⚠️ 生成失敗，請檢查文章內容。</div>`;
+                        return;
+                    }
+                    generatedQuestions = { article, extra, questions };
+                    renderQuestions(questions);
+                    downloadBtn.disabled = false;
+                } catch (error) {
+                    console.error(error);
+                    resultContent.innerHTML = `<div style="color:#b85a5a; padding:2rem;">❌ 生成過程發生錯誤：${error.message}</div>`;
+                }
+            }, 300);
+        });
+
+        // ========== 智慧出題引擎 (完全離線) ==========
+        function generateSmartQuestions(article, extra, counts, wordLimitStr) {
+            const questions = [];
+            const levels = ['擷取與檢索', '統整與解釋', '省思與評鑑'];
+            const levelMap = { low: 0, mid: 1, high: 2 };
+
+            // 從文章中提取關鍵句作為題目素材
+            const sentences = article.match(/[^。！？；\n]+[。！？；\n]/g) || [article];
+            const cleanSentences = sentences.filter(s => s.trim().length > 10);
+
+            // 取得一些關鍵詞 (簡單分詞)
+            const words = article.split(/[\s，。、！？；：、\n]+/).filter(w => w.length > 1);
+            const uniqueWords = [...new Set(words)];
+
+            // 生成單選題
+            function generateSingle(difficulty) {
+                const level = levels[levelMap[difficulty]];
+                const idx = Math.floor(Math.random() * cleanSentences.length);
+                const base = cleanSentences[idx] || article.substring(0, 50);
+                const qText = base.length > 30 ? base.substring(0, 30) + '…' : base;
+
+                // 產生四個選項，其中一個正確
+                const correct = uniqueWords[Math.floor(Math.random() * uniqueWords.length)] || '文章主旨';
+                const wrongs = uniqueWords.filter(w => w !== correct).slice(0, 3);
+                while (wrongs.length < 3) {
+                    wrongs.push('選項' + (wrongs.length + 1));
+                }
+                const options = [
+                    `A. ${correct}`,
+                    `B. ${wrongs[0] || '干擾項一'}`,
+                    `C. ${wrongs[1] || '干擾項二'}`,
+                    `D. ${wrongs[2] || '干擾項三'}`
+                ];
+                // 打亂選項順序
+                const shuffled = shuffle([...options]);
+                const answer = String.fromCharCode(65 + shuffled.indexOf(`A. ${correct}`));
+
+                return {
+                    type: 'single',
+                    question: `根據文章，下列何者最接近「${qText}」的意涵？`,
+                    options: shuffled,
+                    answer: answer,
+                    analysis: `解析：此題考查對文章關鍵句的理解。正確選項「${correct}」與文章脈絡相符。`,
+                    level: level
+                };
+            }
+
+            // 生成多選題
+            function generateMulti(difficulty) {
+                const level = levels[levelMap[difficulty]];
+                const idx = Math.floor(Math.random() * cleanSentences.length);
+                const base = cleanSentences[idx] || article.substring(0, 50);
+                // 隨機挑2~3個正確選項
+                const corrects = uniqueWords.slice(0, 3);
+                while (corrects.length < 2) corrects.push('核心概念');
+                const allOpts = [...corrects];
+                const extras = uniqueWords.filter(w => !corrects.includes(w)).slice(0, 3);
+                while (extras.length < 3) extras.push('干擾選項');
+                const options = [
+                    `A. ${corrects[0]}`,
+                    `B. ${corrects[1] || '正確二'}`,
+                    `C. ${extras[0] || '干擾一'}`,
+                    `D. ${extras[1] || '干擾二'}`,
+                    `E. ${extras[2] || '干擾三'}`
+                ];
+                const shuffled = shuffle([...options]);
+                const answerLetters = shuffled.filter(opt => {
+                    const text = opt.substring(3);
+                    return corrects.some(c => text.includes(c));
+                }).map(opt => opt.charAt(0)).join('');
+
+                return {
+                    type: 'multi',
+                    question: `下列關於「${base.substring(0, 20)}…」的敘述，哪些正確？`,
+                    options: shuffled,
+                    answer: answerLetters || 'AB',
+                    analysis: `解析：多選題需綜合判斷，正確選項為 ${answerLetters}。`,
+                    level: level
+                };
+            }
+
+            // 生成問答題
+            function generateQA(difficulty) {
+                const level = levels[levelMap[difficulty]];
+                const idx = Math.floor(Math.random() * cleanSentences.length);
+                const base = cleanSentences[idx] || article.substring(0, 30);
+                const qText = base.length > 25 ? base.substring(0, 25) + '…' : base;
+
+                return {
+                    type: 'qa',
+                    question: `請分析文中「${qText}」一句，說明其深層意涵與作用。`,
+                    answer: `參考答案：此句揭示了文章的核心觀點，體現了作者對${uniqueWords[0] || '主題'}的深刻思考。`,
+                    analysis: `解析：問答題著重考查統整解釋與省思評鑑能力，需結合上下文進行闡述。`,
+                    word_limit: wordLimitStr,
+                    level: level
+                };
+            }
+
+            // 生成題組
+            function generateGroup(difficulty) {
+                const level = levels[levelMap[difficulty]];
+                const mainText = extra || `（系統搭配文本）${article.substring(0, 60)}…`;
+
+                const sub1 = {
+                    type: 'single',
+                    question: `根據文章，作者的主要觀點為何？`,
+                    options: ['A. 觀點一', 'B. 觀點二', 'C. 觀點三', 'D. 觀點四'],
+                    answer: 'A',
+                    analysis: '解析：此為題組子題，考查對主旨的掌握。',
+                    level: level
+                };
+                const sub2 = {
+                    type: 'qa',
+                    question: `請綜合兩篇文本，說明其共同關懷。`,
+                    answer: `參考答案：兩篇文本均關注${uniqueWords[0] || '核心議題'}，展現了對${uniqueWords[1] || '社會現象'}的反思。`,
+                    analysis: `解析：題組題旨在訓練跨文本比較與統整能力。`,
+                    word_limit: wordLimitStr,
+                    level: level
+                };
+
+                return {
+                    type: 'group',
+                    main_question: `📌 題組：閱讀以下文本（${mainText.substring(0, 30)}…）後回答問題。`,
+                    sub_questions: [sub1, sub2],
+                    translation: extra && extra.includes('古') ? '（白話翻譯：此為古文段落，現代語譯略）' : '',
+                    level: level
+                };
+            }
+
+            // 輔助：洗牌函數
+            function shuffle(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
+            // 根據設定生成各類題目
+            const typeGenerators = {
+                single: generateSingle,
+                multi: generateMulti,
+                qa: generateQA,
+                group: generateGroup
+            };
+
+            for (const [type, countObj] of Object.entries(counts)) {
+                for (const [difficulty, count] of Object.entries(countObj)) {
+                    for (let i = 0; i < count; i++) {
+                        const gen = typeGenerators[type];
+                        if (gen) {
+                            const q = gen(difficulty);
+                            // 確保題目有足夠的變化
+                            questions.push(q);
+                        }
+                    }
+                }
+            }
+
+            // 若題目太少，補充一些
+            if (questions.length < 2) {
+                questions.push(generateSingle('low'));
+                questions.push(generateQA('mid'));
+            }
+
+            return questions;
+        }
+
+        // ========== 渲染題目 ==========
+        function renderQuestions(questions) {
+            let html = '';
+            questions.forEach((q, index) => {
+                const num = index + 1;
+                let typeLabel = '';
+                if (q.type === 'single') typeLabel = '單選題';
+                else if (q.type === 'multi') typeLabel = '多選題';
+                else if (q.type === 'qa') typeLabel = '問答題';
+                else if (q.type === 'group') typeLabel = '題組題';
+
+                html += `<div class="question-block">`;
+                html += `<div class="q-type">${typeLabel} ${q.level ? '· '+q.level : ''}</div>`;
+                html += `<div class="q-text"><strong>${num}.</strong> ${q.question}</div>`;
+
+                if (q.type === 'single' || q.type === 'multi') {
+                    if (q.options) {
+                        html += `<ul class="options">`;
+                        q.options.forEach(opt => { html += `<li>${opt}</li>`; });
+                        html += `</ul>`;
+                    }
+                    html += `<div class="answer">✅ 答案：${q.answer}</div>`;
+                }
+                if (q.type === 'qa') {
+                    if (q.word_limit) html += `<div style="font-size:0.85rem; color:#6a7a8a;">📏 字數限制：${q.word_limit}</div>`;
+                    html += `<div class="answer">📝 參考答案：${q.answer}</div>`;
+                }
+                if (q.type === 'group') {
+                    if (q.main_question) html += `<div style="margin-bottom:0.5rem;"><strong>📌 主問題：</strong>${q.main_question}</div>`;
+                    if (q.sub_questions) {
+                        q.sub_questions.forEach((sub, idx) => {
+                            let subLabel = '';
+                            if (sub.type === 'single') subLabel = '單選';
+                            else if (sub.type === 'multi') subLabel = '多選';
+                            else if (sub.type === 'qa') subLabel = '問答';
+                            html += `<div class="sub-question">`;
+                            html += `<div><strong>子題 ${idx+1}（${subLabel}）</strong> ${sub.question}</div>`;
+                            if (sub.options) {
+                                html += `<ul class="options">`;
+                                sub.options.forEach(opt => { html += `<li>${opt}</li>`; });
+                                html += `</ul>`;
+                            }
+                            if (sub.answer) html += `<div class="answer">✅ 答案：${sub.answer}</div>`;
+                            if (sub.analysis) html += `<div class="analysis">💬 解析：${sub.analysis}</div>`;
+                            html += `</div>`;
+                        });
+                    }
+                }
+                if (q.type !== 'group' && q.analysis) {
+                    html += `<div class="analysis">💬 解析：${q.analysis}</div>`;
+                }
+                if (q.translation) {
+                    html += `<div class="translation">📖 白話翻譯：${q.translation}</div>`;
+                }
+                html += `</div>`;
+            });
+
+            // 答案匯總
+            html += `<div style="background:#f0ede8; padding:1rem 1.5rem; border-radius:10px; margin-top:2rem; border:1px solid #d0cbc6;">`;
+            html += `<h3 style="margin-bottom:0.5rem; font-weight:500;">📋 答案與解析匯總</h3>`;
+            html += `<div style="font-size:0.95rem; line-height:1.8;">`;
+            questions.forEach((q, idx) => {
+                if (q.type === 'single' || q.type === 'multi') {
+                    html += `<div><strong>${idx+1}.</strong> 答案：${q.answer}</div>`;
+                } else if (q.type === 'qa') {
+                    html += `<div><strong>${idx+1}.</strong> 參考答案：${q.answer}</div>`;
+                } else if (q.type === 'group') {
+                    html += `<div><strong>${idx+1}.</strong> 題組（子題答案見上方）</div>`;
+                }
+            });
+            html += `</div></div>`;
+
+            resultContent.innerHTML = html;
+            resultPanel.scrollTop = 0;
+        }
+
+        // ========== 下載 Word ==========
+        downloadBtn.addEventListener('click', function() {
+            if (!generatedQuestions) return;
+            const { article, extra, questions } = generatedQuestions;
+            const { Document, Packer, Paragraph, TextRun } = window.docx;
+
+            const children = [
+                new Paragraph({ children: [new TextRun({ text: '高中國文閱讀測驗', size: 28, bold: true })], alignment: 'center', spacing: { after: 200 } }),
+                new Paragraph({ children: [new TextRun({ text: '文章內容', size: 22, bold: true })], spacing: { before: 200, after: 100 } }),
+                new Paragraph({ children: [new TextRun({ text: article, size: 20 })], spacing: { after: 200 } })
+            ];
+            if (extra) {
+                children.push(
+                    new Paragraph({ children: [new TextRun({ text: '搭配額外文本', size: 22, bold: true })], spacing: { before: 200, after: 100 } }),
+                    new Paragraph({ children: [new TextRun({ text: extra, size: 20 })], spacing: { after: 200 } })
+                );
+            }
+            children.push(new Paragraph({ children: [new TextRun({ text: '試題', size: 24, bold: true })], spacing: { before: 200, after: 100 } }));
+
+            questions.forEach((q, idx) => {
+                const num = idx + 1;
+                let typeLabel = '';
+                if (q.type === 'single') typeLabel = '單選題';
+                else if (q.type === 'multi') typeLabel = '多選題';
+                else if (q.type === 'qa') typeLabel = '問答題';
+                else if (q.type === 'group') typeLabel = '題組題';
+
+                children.push(
+                    new Paragraph({ children: [new TextRun({ text: `${num}. ${typeLabel}`, bold: true, size: 22 })], spacing: { before: 200, after: 80 } }),
+                    new Paragraph({ children: [new TextRun({ text: q.question, size: 20 })], spacing: { after: 80 } })
+                );
+
+                if (q.type === 'single' || q.type === 'multi') {
+                    if (q.options) {
+                        q.options.forEach(opt => {
+                            children.push(new Paragraph({ children: [new TextRun({ text: opt, size: 19 })], spacing: { after: 30 } }));
+                        });
+                    }
+                    children.push(new Paragraph({ children: [new TextRun({ text: `答案：${q.answer}`, bold: true, size: 19, color: '2E7D32' })], spacing: { before: 60, after: 60 } }));
+                }
+                if (q.type === 'qa') {
+                    if (q.word_limit) {
+                        children.push(new Paragraph({ children: [new TextRun({ text: `字數限制：${q.word_limit}`, size: 18, color: '5D6D7E' })], spacing: { after: 40 } }));
+                    }
+                    children.push(new Paragraph({ children: [new TextRun({ text: `參考答案：${q.answer}`, bold: true, size: 19, color: '2E7D32' })], spacing: { before: 60, after: 60 } }));
+                }
+                if (q.type === 'group') {
+                    if (q.main_question) {
+                        children.push(new Paragraph({ children: [new TextRun({ text: `主問題：${q.main_question}`, size: 19, italics: true })], spacing: { after: 60 } }));
+                    }
+                    if (q.sub_questions) {
+                        q.sub_questions.forEach((sub, si) => {
+                            children.push(
+                                new Paragraph({ children: [new TextRun({ text: `子題 ${si+1}（${sub.type==='single'?'單選':sub.type==='multi'?'多選':'問答'}）`, bold: true, size: 19 })], spacing: { before: 100, after: 40 } }),
+                                new Paragraph({ children: [new TextRun({ text: sub.question, size: 19 })], spacing: { after: 40 } })
+                            );
+                            if (sub.options) {
+                                sub.options.forEach(opt => {
+                                    children.push(new Paragraph({ children: [new TextRun({ text: opt, size: 18 })], spacing: { after: 20 } }));
+                                });
+                            }
+                            if (sub.answer) {
+                                children.push(new Paragraph({ children: [new TextRun({ text: `答案：${sub.answer}`, bold: true, size: 18, color: '2E7D32' })], spacing: { before: 40, after: 40 } }));
+                            }
+                            if (sub.analysis) {
+                                children.push(new Paragraph({ children: [new TextRun({ text: `解析：${sub.analysis}`, size: 18, color: '5D4E37' })], spacing: { after: 40 } }));
+                            }
+                        });
+                    }
+                }
+                if (q.type !== 'group' && q.analysis) {
+                    children.push(new Paragraph({ children: [new TextRun({ text: `解析：${q.analysis}`, size: 18, color: '5D4E37' })], spacing: { after: 80 } }));
+                }
+                if (q.translation) {
+                    children.push(new Paragraph({ children: [new TextRun({ text: `白話翻譯：${q.translation}`, size: 18, color: '4E5A65' })], spacing: { after: 80 } }));
+                }
+                children.push(new Paragraph({ children: [new TextRun({ text: '──────────────────', size: 18, color: 'B0A8A0' })], spacing: { after: 100 } }));
+            });
+
+            children.push(new Paragraph({ children: [new TextRun({ text: '答案與解析匯總', bold: true, size: 22 })], spacing: { before: 300, after: 100 } }));
+            questions.forEach((q, idx) => {
+                if (q.type === 'single' || q.type === 'multi') {
+                    children.push(new Paragraph({ children: [new TextRun({ text: `${idx+1}. 答案：${q.answer}`, size: 19 })], spacing: { after: 30 } }));
+                } else if (q.type === 'qa') {
+                    children.push(new Paragraph({ children: [new TextRun({ text: `${idx+1}. 參考答案：${q.answer}`, size: 19 })], spacing: { after: 30 } }));
+                } else if (q.type === 'group') {
+                    children.push(new Paragraph({ children: [new TextRun({ text: `${idx+1}. 題組（子題答案詳見上方）`, size: 19 })], spacing: { after: 30 } }));
+                }
+            });
+
+            const doc = new Document({ sections: [{ properties: {}, children }] });
+            Packer.toBlob(doc).then(blob => {
+                saveAs(blob, '閱讀測驗題目.docx');
+            }).catch(err => {
+                alert('下載失敗：' + err.message);
+            });
+        });
+
+        console.log('📚 高中國文閱讀測驗生成器 (教育免費版) 已載入，無需 API Key。');
+    </script>
+</body>
+</html>
